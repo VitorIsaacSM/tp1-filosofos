@@ -1,0 +1,16 @@
+Solução 1 hierarquia de recursos
+
+Nesta solução podemos usar cada garfo sendo um Mutex, e passando por parametro para os filosofos os seus 2 respectivos garfos (A e B).
+Um filosofo sempre pegara primeiro o garfo que é passado no primeiro parametro (Garfo A, ou o garfo a sua direita),
+e então se conseguir pegar o primeiro garfo, ira´tentar pegar o segundo e comer
+
+Para evitar deadlocks, essa solução de maneira esperta define que um dos filosofos é "Canhoto" logo será passado pra ele a ordem invertida dos garfos por parametro.
+Assim, como este filosofo possui a ordem de pegar os garfos invertida, é impossível que ocorram deadlocks por cada filosofo pegar 1 garfo e nenhum comer.
+
+O problema desta solução é que não existe um balanceamento muito bom para quais filosofos estão comento, podendo acontecer longas sequencias sem que um filosofo especifico coma
+
+
+
+
+Solução 2 Arbitro
+
