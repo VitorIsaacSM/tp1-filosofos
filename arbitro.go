@@ -6,6 +6,7 @@ import (
     "fmt"
     "sync"
 		"time"
+    "strings"
 )
 
 type Philosopher struct {
@@ -21,10 +22,12 @@ func (p Philosopher) eat(iteration int) {
     p.right.Lock()
     p.left.Lock()
 
-		for s := 1; s <= p.id*6; s++ {
-			fmt.Printf(" ")
+    var sb strings.Builder
+
+		for s := 0; s <= p.id*5; s++ {
+			sb.WriteString(" ")
 		}
-		fmt.Printf(" E%d\n", iteration + 1) // Eating
+		fmt.Printf(sb.String() + " E%d\n", iteration + 1) // Eating
 
 
 		time.Sleep(time.Duration(time_to_eat) * time.Second)
@@ -34,24 +37,23 @@ func (p Philosopher) eat(iteration int) {
 }
 
 func (p Philosopher) think(iteration int) {
+    var sb strings.Builder
 
-		for s := 1; s <= p.id*6; s++ {
-			fmt.Printf(" ")
+    for s := 0; s <= p.id*5; s++ {
+      sb.WriteString(" ")
 		}
-		fmt.Printf(" T%d\n", iteration + 1) // Thinking
-
+		fmt.Printf(sb.String() + " T%d\n", iteration + 1) // Thinking
 		time.Sleep(time.Duration(time_to_think) * time.Second)
 }
 
 func (p Philosopher) start(arbitratorChannel chan bool, wg *sync.WaitGroup) {
   for i := 0; i < 5; i++ {
-    wg.Add(1)
     <-arbitratorChannel // wait for permission to eat
     p.eat(i)
     arbitratorChannel <- true // inform arbitrator that eating is done
     p.think(i)
-    wg.Done()
   }
+  wg.Done()
 }
 
 func main() {
@@ -77,6 +79,7 @@ func main() {
         left := chopsticks[i]
         right := chopsticks[(i+1)%5]
         philosopher := Philosopher{i, left, right, arbitratorChannel}
+        wg.Add(1)
         go philosopher.start(arbitratorChannel, &wg)
     }
     wg.Wait()
