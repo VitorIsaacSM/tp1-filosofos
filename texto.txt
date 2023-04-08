@@ -14,3 +14,5 @@ O problema desta solução é que não existe um balanceamento muito bom para qu
 
 Solução 2 Arbitro
 
+Nesta solução teremos um canal arbtirador que permite apenas um filosofo comer por vez, os
+filosofos são sempre livres para "pensarem" quando não estiverem esperando para comer.

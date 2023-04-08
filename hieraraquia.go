@@ -6,70 +6,108 @@ import (
 	"fmt"
 	"sync"
 	"time"
+	"strings"
 )
 
-type fork struct{ sync.Mutex }
+type Fork struct {
+	sync.Mutex
+	id int
+}
 
-var dining sync.WaitGroup
+type Philosopher struct {
+	id              int
+	leftFork, rightFork *Fork
+	eatenCount      int
+}
 
-func Philosopher(id, iteration int, forkA *fork, forkB *fork) {
-	time_to_think := 2
-	time_to_eat := 3
+var time_to_think = 2
+var time_to_eat = 3
 
-	forkA.Lock() // pick up forks
-	forkB.Lock()
-
-	// think
-	for s := 1; s <= id*6; s++ {
-		fmt.Printf(" ")
+func NewPhilosopher(id int, leftFork, rightFork *Fork) *Philosopher {
+	return &Philosopher{
+		id:         id,
+		leftFork:   leftFork,
+		rightFork:  rightFork,
+		eatenCount: 0,
 	}
-	fmt.Printf(" T%d\n", iteration) // Thinking
-	time.Sleep(time.Duration(time_to_think) * time.Second)
+}
 
-	// eat
+func (p *Philosopher) dine() {
+	p.acquireForks()
+	p.eat()
+	p.releaseForks()
+}
 
-	for s := 1; s <= id*6; s++ {
-		fmt.Printf(" ")
+func (p *Philosopher) start(wg *sync.WaitGroup, maxEatingCount int) {
+	defer wg.Done()
+	for p.eatenCount < maxEatingCount {
+		p.dine()
+		p.think()
 	}
-	fmt.Printf(" E%d\n", iteration) // Eating
+}
+
+func (p *Philosopher) acquireForks() {
+	if p.leftFork.id < p.rightFork.id {
+		p.leftFork.Lock()
+		p.rightFork.Lock()
+	} else {
+		p.rightFork.Lock()
+		p.leftFork.Lock()
+	}
+}
+
+func (p *Philosopher) releaseForks() {
+	p.leftFork.Unlock()
+	p.rightFork.Unlock()
+}
+
+func (p *Philosopher) eat() {
+	var sb strings.Builder
+
+	for s := 0; s <= p.id*5; s++ {
+		sb.WriteString(" ")
+	}
+	fmt.Printf(sb.String() + " E%d\n", p.eatenCount + 1) // Eating
+	p.eatenCount++
+
 	time.Sleep(time.Duration(time_to_eat) * time.Second)
+}
 
-	forkA.Unlock() // put down forks
-	forkB.Unlock()
+func (p *Philosopher) think() {
+    var sb strings.Builder
 
-	dining.Done()
+    for s := 0; s <= p.id*5; s++ {
+      sb.WriteString(" ")
+		}
+		fmt.Printf(sb.String() + " T%d\n",  p.eatenCount) // Thinking
+		time.Sleep(time.Duration(time_to_think) * time.Second)
 }
 
 func main() {
-	philosophers := 5
-	rounds := 5
+	n := 5
+	maxEatingCount := 5
 
-	// Create forks
-	forks := make([]*fork, philosophers)
-	for i := 0; i < philosophers; i++ {
-		forks[i] = new(fork)
+	forks := make([]*Fork, n)
+	for i := 0; i < n; i++ {
+		forks[i] = &Fork{id: i}
 	}
 
-	dining.Add(philosophers * rounds)
+	philosophers := make([]*Philosopher, n)
+	for i := 0; i < n; i++ {
+		philosophers[i] = NewPhilosopher(i, forks[i], forks[(i+1)%n])
+	}
 
-	fmt.Println("\n[P1] [P2] [P3] [P4] [P5]\n")
-
-	// run philosophers
-
+	var wg sync.WaitGroup
+	wg.Add(n)
 	start := time.Now()
 
-	for i := 0; i < rounds; i++ {
-		for j := 0; j < philosophers; j++ {
-			// if last philosopher, make him left handed
-			if j == (philosophers - 1) {
-				go Philosopher(j, i + 1, forks[0], forks[j])
-			} else {
-				go Philosopher(j, i + 1, forks[j], forks[j + 1])
-			}
-		}
+	fmt.Println("\n [P1] [P2] [P3] [P4] [P5] \n")
+
+	for _, p := range philosophers {
+		go p.start(&wg, maxEatingCount)
 	}
 
-	dining.Wait() // wait for all philosophers to eat
+	wg.Wait()
 
 	elapsed := time.Since(start)
 	fmt.Printf("\nSequential Dinner took %s\n\n", elapsed)
